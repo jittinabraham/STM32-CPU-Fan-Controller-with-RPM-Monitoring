@@ -12,10 +12,8 @@ A PWM-based fan speed controller using STM32 NUCLEO-C031C6 that monitors RPM via
   
 
 ### Build Steps
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/stm32-cpu-fan-controller.git 
-
+Clone the repository
+ 
 Open Project:
 
 Launch STM32CubeIDE
