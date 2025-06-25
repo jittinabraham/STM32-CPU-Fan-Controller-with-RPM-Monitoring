@@ -18,14 +18,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os2.h"
 #include "string.h"
-
-
+#include "FreeRTOS.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-volatile uint32_t pulse_count = 0;  // Count of valid pulses
-volatile uint32_t rpm = 0;  // Calculated RPM
-uint32_t last_time = 0;  // Store the last time to calculate RPM every second
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,10 +46,25 @@ uint32_t last_time = 0;  // Store the last time to calculate RPM every second
 COM_InitTypeDef BspCOMInit;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
+static void MX_GPIO_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
+/* USER CODE BEGIN PFP */
+volatile uint32_t pulse_count = 0;  // Count of valid pulses
+volatile uint32_t rpm = 0;  // Calculated RPM
+uint32_t last_time = 0;  // Store the last time to calculate RPM every second
 void TIM1_CC_IRQHandler(void)
 {
     // Check if the interrupt flag for Capture/Compare 1 is set
@@ -60,37 +73,12 @@ void TIM1_CC_IRQHandler(void)
         // Clear the interrupt flag to prevent it from triggering again
         __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_CC1);
         pulse_count++;
-        // Get the captured value (the timer counter at the moment of the pulse)
-        //uint32_t captured_value = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-        // Send a message via UART indicating the capture event
-        //char msg[50];
-        //sprintf(msg, "Captured value: %lu\r\n", captured_value);
-        //HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 1000);  // Send the message via UART
 
-        // Optionally, you can increment a pulse count or do other processing
+        //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+
     }
 }
 
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_TIM1_Init(void);
-static void MX_USART1_UART_Init(void);
-/* USER CODE BEGIN PFP */
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{	//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);  // Set PA5 high
-	if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)
-	{
-
-		pulse_count++;
-
-	}
-
-}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -101,14 +89,14 @@ void Send_RPM_Via_UART(uint32_t rpm_value)
 
     // Convert the RPM value to a string using sprintf
     sprintf(rpm_str, "RPM: %lu\r\n", rpm_value);  // Convert RPM to string format
-
+    //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     // Send the string via UART
     HAL_UART_Transmit(&huart1, (uint8_t*)rpm_str, strlen(rpm_str), 1000);  // Timeout is 1000 ms
 }
-void RPM_Calculate()
-{
+void measure_fan_rpm()
+{    //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     // Calculate RPM if 1 second has passed
-    if (HAL_GetTick() - last_time >= 5000)  // 1000 ms (1 second)
+    if (HAL_GetTick() - last_time >= 1000)  // 1000 ms (1 second)
     {
         // Calculate RPM based on pulse count (assuming 2 pulses per revolution)
         rpm = (pulse_count * 60) / 2;  // RPM = (Pulse Frequency * 60) / PPR
@@ -117,6 +105,42 @@ void RPM_Calculate()
         Send_RPM_Via_UART(rpm);
     }
 }
+void Command_Task(void *pvParameters)
+{
+    char command[50];
+
+    while (1)
+    {
+        // Receive UART command (e.g., "SET RPM 1500")
+        int length = HAL_UART_Receive(&huart1, (uint8_t *)command, sizeof(command), HAL_MAX_DELAY);
+
+        if (length > 0)
+        {
+            // Parse the command and extract the RPM value
+           // int new_rpm = parse_rpm_command(command);  // Custom function to extract RPM from command
+
+            // Set the PWM duty cycle to adjust the RPM
+           // set_pwm_duty_cycle(new_rpm);  // Custom function to adjust PWM based on new RPM
+        }
+
+        // Small delay to avoid busy-waiting
+        vTaskDelay(pdMS_TO_TICKS(100));  // Delay 100ms
+    }
+}
+void RPM_Task(void *pvParameters)
+{
+    while (1)
+    {   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+        // Measure RPM (e.g., from tachometer or counter)
+        measure_fan_rpm();  // Custom function to get RPM and send it via UART
+
+
+
+        // Delay before next reading (e.g., 1 second)
+        vTaskDelay(pdMS_TO_TICKS(10000));  // Delay 1000ms (1 second)
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -149,10 +173,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM1_Init();
+  MX_TIM3_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in app_freertos.c) */
+  MX_FREERTOS_Init();
 
   /* Initialize leds */
   BSP_LED_Init(LED_GREEN);
@@ -171,16 +202,25 @@ int main(void)
     Error_Handler();
   }
 
+  xTaskCreate(RPM_Task, "RPM_Task", 128, NULL, 1, NULL);
+
+  // Create the Command task (higher priority)
+  //xTaskCreate(Command_Task, "Command_Task", 128, NULL, 2, NULL);
+
+  // Start the FreeRTOS scheduler
+  vTaskStartScheduler();
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
+  // Create the RPM task (low priority)
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  RPM_Calculate();
+
     /* USER CODE END WHILE */
-	 // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-	 // HAL_Delay(100);
-	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-	 // HAL_Delay(100);
 
     /* USER CODE BEGIN 3 */
   }
@@ -235,7 +275,6 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 0 */
 
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_IC_InitTypeDef sConfigIC = {0};
 
@@ -249,15 +288,6 @@ static void MX_TIM1_Init(void)
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
   if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
@@ -271,7 +301,7 @@ static void MX_TIM1_Init(void)
   }
   sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
   sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-  sConfigIC.ICPrescaler = TIM_ICPSC_DIV2;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
   sConfigIC.ICFilter = 0;
   if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
   {
@@ -282,6 +312,55 @@ static void MX_TIM1_Init(void)
   //HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 0);  // Set priority (you can adjust this)
   HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);
   /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
 
 }
 
@@ -340,7 +419,6 @@ static void MX_USART1_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
@@ -350,16 +428,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
@@ -368,6 +436,28 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM14 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM14)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

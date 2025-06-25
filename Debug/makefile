@@ -9,6 +9,10 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/subdir.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM0/subdir.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/subdir.mk
+-include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include Drivers/STM32C0xx_HAL_Driver/Src/subdir.mk
 -include Drivers/BSP/STM32C0xx_Nucleo/subdir.mk
 -include Core/Startup/subdir.mk
@@ -35,34 +39,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := cpu_exhaust_fan
+BUILD_ARTIFACT_NAME := speed control
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-cpu_exhaust_fan.elf \
+speed\ control.elf \
 
 MAP_FILES += \
-cpu_exhaust_fan.map \
+speed\ control.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-cpu_exhaust_fan.list \
+speed\ control.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: cpu_exhaust_fan.elf secondary-outputs
+main-build: speed\ control.elf secondary-outputs
 
 # Tool invocations
-cpu_exhaust_fan.elf cpu_exhaust_fan.map: $(OBJS) $(USER_OBJS) C:\Users\jittin\STM32CubeIDE\workspace_1.18.0\cpu_exhaust_fan\STM32C031C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "cpu_exhaust_fan.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\jittin\STM32CubeIDE\workspace_1.18.0\cpu_exhaust_fan\STM32C031C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="cpu_exhaust_fan.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+speed\ control.elf speed\ control.map: $(OBJS) $(USER_OBJS) C:\Users\jittin\STM32CubeIDE\workspace_1.18.0\speed\ control\STM32C031C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "speed control.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\jittin\STM32CubeIDE\workspace_1.18.0\speed control\STM32C031C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="speed control.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -71,14 +75,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-cpu_exhaust_fan.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "cpu_exhaust_fan.list"
+speed\ control.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "speed control.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) cpu_exhaust_fan.elf cpu_exhaust_fan.list cpu_exhaust_fan.map default.size.stdout
+	-$(RM) default.size.stdout speed\ control.elf speed\ control.list speed\ control.map speed\\ control.elf
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
