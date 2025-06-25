@@ -57,12 +57,12 @@ Cloud Integration:
 
 The PC or cloud-based application can send a set RPM command to the STM32 via UART. The system receives this command, adjusts the PWM signal, and changes the fan's RPM.
 
-System Architecture
-**Task 1**: RPM Measurement and UART Transmission
+**System Architecture**
+Task 1: RPM Measurement and UART Transmission
 
 This task reads the tachometer signal, calculates the RPM, and sends it over UART to the PC every second.
 
-**Task 2**: UART Reception and PWM Adjustment
+Task 2: UART Reception and PWM Adjustment
 
 This task continuously receives commands from the PC or cloud (e.g., "SET RPM 1500") and adjusts the PWM signal to control the fan speed.
 
