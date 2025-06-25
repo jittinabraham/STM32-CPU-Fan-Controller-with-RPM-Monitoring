@@ -2,7 +2,7 @@
 Project Overview
 This project involves creating a system to control and monitor the RPM (Revolutions Per Minute) of a fan using an STM32 microcontroller. The RPM of the fan is continuously measured and transmitted via UART to a PC, where it can be visualized or logged. Additionally, the system can receive commands from the cloud (or a PC via UART) to set the fan RPM to a specific value, which is then reflected by adjusting the PWM signal controlling the fan's speed.
 
-Key Features
+**Key Features**
 RPM Measurement: The microcontroller continuously measures the RPM of a fan using an input signal from the fan's tachometer.
 
 UART Communication: The measured RPM is transmitted over UART to the PC or cloud for monitoring.
@@ -11,9 +11,9 @@ PWM Control: The fan's RPM can be adjusted by modifying the PWM signal based on 
 
 Cloud Integration: The system is designed to receive RPM set commands from the cloud via UART and adjust the fan speed accordingly.
 
-Project Components
+**Project Components**
 Hardware
-STM32 Microcontroller (e.g., STM32H7): Acts as the main controller, responsible for managing tasks like RPM measurement, UART communication, and PWM signal generation.
+STM32 Microcontroller (e.g., C031C6): Acts as the main controller, responsible for managing tasks like RPM measurement, UART communication, and PWM signal generation.
 
 Fan with Tachometer: The fan provides a tachometer signal (usually a pulse train) to measure the RPM.
 
@@ -58,11 +58,11 @@ Cloud Integration:
 The PC or cloud-based application can send a set RPM command to the STM32 via UART. The system receives this command, adjusts the PWM signal, and changes the fan's RPM.
 
 System Architecture
-Task 1: RPM Measurement and UART Transmission
+**Task 1**: RPM Measurement and UART Transmission
 
 This task reads the tachometer signal, calculates the RPM, and sends it over UART to the PC every second.
 
-Task 2: UART Reception and PWM Adjustment
+**Task 2**: UART Reception and PWM Adjustment
 
 This task continuously receives commands from the PC or cloud (e.g., "SET RPM 1500") and adjusts the PWM signal to control the fan speed.
 
