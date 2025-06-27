@@ -141,6 +141,11 @@ void RPM_Task(void *pvParameters)
     }
 }
 
+void throwError() {
+    fprintf(stderr, "Fatal error occurred!\n");
+    exit(EXIT_FAILURE);  // Abort the program
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -221,7 +226,7 @@ int main(void)
   {
 
     /* USER CODE END WHILE */
-
+    throwError();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
