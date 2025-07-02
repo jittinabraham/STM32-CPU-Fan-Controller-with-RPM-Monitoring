@@ -21,6 +21,7 @@
 #include "cmsis_os2.h"
 #include "string.h"
 #include "FreeRTOS.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -91,15 +92,15 @@ void Send_RPM_Via_UART(uint32_t rpm_value)
     sprintf(rpm_str, "RPM: %lu\r\n", rpm_value);  // Convert RPM to string format
     //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     // Send the string via UART
-    HAL_UART_Transmit(&huart1, (uint8_t*)rpm_str, strlen(rpm_str), 1000);  // Timeout is 1000 ms
+    HAL_UART_Transmit(&huart1, (uint8_t*)rpm_str, strlen(rpm_str), HAL_MAX_DELAY);  // Timeout is 1000 ms
 }
 void measure_fan_rpm()
 {    //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     // Calculate RPM if 1 second has passed
-    if (HAL_GetTick() - last_time >= 1000)  // 1000 ms (1 second)
+    if (HAL_GetTick() - last_time >= 10000)  // 1000 ms (1 second)
     {
         // Calculate RPM based on pulse count (assuming 2 pulses per revolution)
-        rpm = (pulse_count * 60) / 2;  // RPM = (Pulse Frequency * 60) / PPR
+        rpm = (pulse_count*6) ;  // RPM = (Pulse Frequency * 60) / PPR
         last_time = HAL_GetTick();  // Update last time to current time
         pulse_count = 0;  // Reset the pulse count for the next second
         Send_RPM_Via_UART(rpm);
@@ -107,43 +108,70 @@ void measure_fan_rpm()
 }
 void Command_Task(void *pvParameters)
 {
-    char command[50];
-
+	uint8_t command;
+    char    buf[16];
+    size_t  idx = 0;
     while (1)
     {
         // Receive UART command (e.g., "SET RPM 1500")
-        int length = HAL_UART_Receive(&huart1, (uint8_t *)command, sizeof(command), HAL_MAX_DELAY);
+        //int length = HAL_UART_Receive(&huart1, (uint8_t *)command, sizeof(command), HAL_MAX_DELAY);
+    	if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE))
+    	{
+    		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    		HAL_UART_Receive(&huart1, &command, 1, 0);
 
-        if (length > 0)
-        {
+    	    if (command == "\r" || command == "\n")
+
+    		            {   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    		                buf[idx] = '\0';    // terminate string
+    		                idx = 0;            // reset for next time
+
+    		                // Convert to integer
+    		                int new_rpm = atoi(buf);
+    		                if (new_rpm > 0 && new_rpm <= 1400)
+    		                {
+    		                    uint32_t cmp = ((htim3.Init.Period + 1) * new_rpm) / 1400;
+    		                    __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, cmp);
+    		                    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    		                }
+
+    		            }
+    	    else
+    	                {
+    	                    // Store digit (or other) until buffer full
+    	                    if (idx < sizeof(buf)-1)
+    	                        buf[idx++] = command;
+    	                    else
+    	                        idx = 0;  // overflow — just reset
+    	                }
+    	 }
+    	else
+    		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+        //if (length > 0)
+        //{
             // Parse the command and extract the RPM value
            // int new_rpm = parse_rpm_command(command);  // Custom function to extract RPM from command
 
             // Set the PWM duty cycle to adjust the RPM
-           // set_pwm_duty_cycle(new_rpm);  // Custom function to adjust PWM based on new RPM
-        }
+            //set_pwm_duty_cycle(new_rpm);  // Custom function to adjust PWM based on new RPM
+       // }
 
         // Small delay to avoid busy-waiting
-        vTaskDelay(pdMS_TO_TICKS(100));  // Delay 100ms
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 100ms
     }
 }
 void RPM_Task(void *pvParameters)
 {
     while (1)
-    {   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+    {
         // Measure RPM (e.g., from tachometer or counter)
         measure_fan_rpm();  // Custom function to get RPM and send it via UART
 
 
 
         // Delay before next reading (e.g., 1 second)
-        vTaskDelay(pdMS_TO_TICKS(10000));  // Delay 1000ms (1 second)
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay 1000ms (1 second)
     }
-}
-
-void throwError() {
-    fprintf(stderr, "Fatal error occurred!\n");
-    exit(EXIT_FAILURE);  // Abort the program
 }
 
 /* USER CODE END 0 */
@@ -210,7 +238,7 @@ int main(void)
   xTaskCreate(RPM_Task, "RPM_Task", 128, NULL, 1, NULL);
 
   // Create the Command task (higher priority)
-  //xTaskCreate(Command_Task, "Command_Task", 128, NULL, 2, NULL);
+  xTaskCreate(Command_Task, "Command_Task", 256, NULL, 2, NULL);
 
   // Start the FreeRTOS scheduler
   vTaskStartScheduler();
@@ -226,7 +254,7 @@ int main(void)
   {
 
     /* USER CODE END WHILE */
-    throwError();
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -339,7 +367,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
+  htim3.Init.Prescaler = 1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

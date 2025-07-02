@@ -65,8 +65,8 @@ all: main-build
 main-build: speed\ control.elf secondary-outputs
 
 # Tool invocations
-speed\ control.elf speed\ control.map: $(OBJS) $(USER_OBJS) C:\Users\jittin\STM32CubeIDE\workspace_1.18.0\speed\ control\STM32C031C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "speed control.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\jittin\STM32CubeIDE\workspace_1.18.0\speed control\STM32C031C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="speed control.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+speed\ control.elf speed\ control.map: $(OBJS) $(USER_OBJS) C:\Users\jittin\STM32CubeIDE\STM32-CPU-Fan-Controller-with-RPM-Monitoring\STM32C031C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "speed control.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Users\jittin\STM32CubeIDE\STM32-CPU-Fan-Controller-with-RPM-Monitoring\STM32C031C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="speed control.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
