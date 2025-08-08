@@ -25,7 +25,7 @@ jobs:
       # Step 3: Build the CubeIDE project using the Makefile
       - name: Build STM32 CubeIDE project
         run: |
-          cd STM32-CPU-FAN-Controller-With-RPM-Monitoring/Debug
+          cd Debug
           make -j$(nproc)
 
       # Optional: Upload the build artifact (firmware file, e.g., .bin, .elf)
@@ -33,4 +33,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: STM32-CPU-FAN-Controller-With-RPM-Monitoring/Debug/firmware.elf
+          path: Debug/firmware.elf
