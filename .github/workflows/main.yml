@@ -1,12 +1,13 @@
 name: STM32 CubeIDE Build Pipeline
 
+# This specifies when to trigger the workflow (e.g., on pushes or pull requests to the `main` branch)
 on:
   push:
     branches:
-      - main
+      - main  # Trigger on push to the 'main' branch
   pull_request:
     branches:
-      - main
+      - main  # Trigger on pull requests targeting the 'main' branch
 
 jobs:
   build:
@@ -33,4 +34,3 @@ jobs:
         with:
           name: firmware
           path: STM32_Project_Directory/Debug/firmware.elf
-
