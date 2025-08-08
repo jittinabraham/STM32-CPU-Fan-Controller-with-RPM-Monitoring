@@ -1,1 +1,36 @@
+name: STM32 CubeIDE Build Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Install ARM Toolchain
+      - name: Set up ARM toolchain
+        run: sudo apt-get install gcc-arm-none-eabi
+
+      # Step 3: Build the CubeIDE project using the Makefile
+      - name: Build STM32 CubeIDE project
+        run: |
+          cd STM32_Project_Directory
+          make -j$(nproc)
+
+      # Optional: Upload the build artifact (firmware file, e.g., .bin, .elf)
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: firmware
+          path: STM32_Project_Directory/Debug/firmware.elf
 
