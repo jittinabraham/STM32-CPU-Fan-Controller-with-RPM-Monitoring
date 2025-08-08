@@ -30,7 +30,7 @@ jobs:
 
       # Optional: Upload the build artifact (firmware file, e.g., .bin, .elf)
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: firmware
           path: STM32_Project_Directory/Debug/firmware.elf
