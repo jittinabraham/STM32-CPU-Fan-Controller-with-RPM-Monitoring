@@ -49,7 +49,9 @@ extern "C" {
 void NMI_Handler(void);
 void HardFault_Handler(void);
 void EXTI4_15_IRQHandler(void);
+void TIM1_CC_IRQHandler(void);
 void TIM14_IRQHandler(void);
+void USART2_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

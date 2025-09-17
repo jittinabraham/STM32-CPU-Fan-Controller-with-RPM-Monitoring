@@ -29,8 +29,6 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32c0xx_hal.h"
 #include "stm32c0xx_nucleo.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -70,10 +68,6 @@ void Error_Handler(void);
 #define RCC_OSC_IN_GPIO_Port GPIOF
 #define RCC_OSC_OUT_Pin GPIO_PIN_1
 #define RCC_OSC_OUT_GPIO_Port GPIOF
-#define DEBUG_SWDIO_Pin GPIO_PIN_13
-#define DEBUG_SWDIO_GPIO_Port GPIOA
-#define DEBUG_SWCLK_Pin GPIO_PIN_14
-#define DEBUG_SWCLK_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
