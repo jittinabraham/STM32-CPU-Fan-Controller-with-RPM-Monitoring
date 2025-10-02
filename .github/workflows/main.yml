@@ -1,36 +1,50 @@
-name: STM32 CubeIDE Build Pipeline
+name: STM32 CubeIDE Build and Analysis Pipeline
 
-# This specifies when to trigger the workflow (e.g., on pushes or pull requests to the `main` branch)
 on:
   push:
     branches:
-      - main  # Trigger on push to the 'main' branch
+      - main
   pull_request:
     branches:
-      - main  # Trigger on pull requests targeting the 'main' branch
+      - main
 
 jobs:
+  # This new job runs a static analysis check
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # Use a more recent version of checkout
+
+      - name: Install Cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run Cppcheck
+        # This command checks source/header files in common CubeIDE folders
+        # --error-exitcode=1 makes the job fail if Cppcheck finds an error
+        # --suppress=missingIncludeSystem prevents errors about missing standard headers
+        run: |
+          cppcheck --enable=all --suppress=missingIncludeSystem --error-exitcode=1 Core/Src Core/Inc Drivers/STM32F4xx_HAL_Driver
+
+  # Your existing build job
   build:
     runs-on: ubuntu-latest
-
+    # Optional: If you want the build to run ONLY if static analysis passes, add this line:
+    # needs: static-analysis 
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4 # Use a more recent version of checkout
 
-      # Step 2: Install ARM Toolchain
       - name: Set up ARM toolchain
-        run: sudo apt-get install gcc-arm-none-eabi
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi
 
-      # Step 3: Build the CubeIDE project using the Makefile
       - name: Build STM32 CubeIDE project
         run: |
           cd Debug
           make -j$(nproc)
 
-      # Optional: Upload the build artifact (firmware file, e.g., .bin, .elf)
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: firmware
-          path: Debug/firmware.elf
+          path: Debug/*.elf # Use a wildcard to capture the correct .elf file
